@@ -1,0 +1,55 @@
+# Experiment 1 — Value/Structure PID. Run configuration.
+# Companion to config/itemids.resolved.json, which is regenerated at runtime.
+
+source:
+  project: labmae                       # billing / working project
+  mimic:   physionet-data.mimiciv_3_1   # hosp.*, icu.*
+  workset: labmae.labpid                # cohort, labs_48h, ref_canon, channels
+
+cohort:                                 # T1
+  adults_min_age: 18
+  stays: first_icu_stay_per_patient
+  anchor: icu_intime
+  feature_window_hours: 24              # W
+  target_horizon_hours: 24              # H  -> targets drawn in [t0+W, t0+W+H)
+  group_key: subject_id                 # never hadm_id
+
+analytes:                               # T2
+  core_completeness_threshold: 0.95     # -> value channel
+  discretionary_floor: 0.02             # -> structural mask/counts
+  fluid: Blood
+  exclude_derived: true                 # arithmetic functions of other analytes
+  reference_ranges: canonical_modal_per_itemid_and_gender
+
+targets:                                # T5
+  - {itemid: 51265, label: Platelet Count,     partner: 51222}
+  - {itemid: 51301, label: White Blood Cells,  partner: 51222}
+  - {itemid: 50912, label: Creatinine,         partner: 51006}
+  - {itemid: 51222, label: Hemoglobin,         partner: 51221, role: positive_control}
+  - {itemid: 51006, label: Urea Nitrogen,      partner: 50912}
+  - {itemid: 50882, label: Bicarbonate,        partner: 50902}
+
+track_a:                                # discrete BROJA, PRIMARY
+  solver: cone                          # exponential cone (Makkeh et al. 2018)
+  solver_cascade: [cone, admui, scipy]  # only on a non-negativity failure
+  n_permutations: 1000
+  min_cell_count: 20                    # A6 occupancy gate
+  collapse_min_shares: [0.02, 0.05, 0.10, 0.20]
+  min_levels: 2                         # never collapse a summary to a constant
+  v_schemes: [refrange3, refrange2, tertile3, quartile4]
+  s_schemes: [amlab3, amlab2, offhours3, nspec3, gapcv3, discmask3, discmask4, stat3]
+
+track_b:                                # V-information, SECONDARY
+  folds: 5                              # StratifiedGroupKFold, groups=subject_id
+  probe_grid:                           # (hidden_sizes, weight_decay)
+    - [[],              0.01]
+    - [[16],            1.0]
+    - [[32],            0.1]
+    - [[64, 32],        0.01]
+    - [[128, 64],       0.001]
+    - [[512, 512, 256], 0.0001]
+  probe_selection: argmax(I_V_joint - shuffle_floor)
+  floor_seeds: [0, 1]
+  marginal_entropy: analytic_crossfit_base_rate
+  bootstrap_draws: 2000
+  units: nats

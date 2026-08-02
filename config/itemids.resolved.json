@@ -1,0 +1,483 @@
+{
+  "source": "physionet-data.mimiciv_3_1_hosp.d_labitems",
+  "core_threshold": 0.95,
+  "discretionary_floor": 0.02,
+  "n_cohort_with_window_labs": 63371,
+  "core": [
+    {
+      "itemid": 50983,
+      "label": "Sodium",
+      "completeness": 0.9879
+    },
+    {
+      "itemid": 50902,
+      "label": "Chloride",
+      "completeness": 0.9878
+    },
+    {
+      "itemid": 50912,
+      "label": "Creatinine",
+      "completeness": 0.9875
+    },
+    {
+      "itemid": 50971,
+      "label": "Potassium",
+      "completeness": 0.9874
+    },
+    {
+      "itemid": 50882,
+      "label": "Bicarbonate",
+      "completeness": 0.9872
+    },
+    {
+      "itemid": 51006,
+      "label": "Urea Nitrogen",
+      "completeness": 0.9872
+    },
+    {
+      "itemid": 51221,
+      "label": "Hematocrit",
+      "completeness": 0.9845
+    },
+    {
+      "itemid": 50931,
+      "label": "Glucose",
+      "completeness": 0.9833
+    },
+    {
+      "itemid": 51265,
+      "label": "Platelet Count",
+      "completeness": 0.982
+    },
+    {
+      "itemid": 51301,
+      "label": "White Blood Cells",
+      "completeness": 0.9817
+    },
+    {
+      "itemid": 51222,
+      "label": "Hemoglobin",
+      "completeness": 0.9816
+    },
+    {
+      "itemid": 51279,
+      "label": "Red Blood Cells",
+      "completeness": 0.9815
+    },
+    {
+      "itemid": 50960,
+      "label": "Magnesium",
+      "completeness": 0.9506
+    }
+  ],
+  "discretionary": [
+    {
+      "itemid": 50970,
+      "label": "Phosphate",
+      "completeness": 0.9125
+    },
+    {
+      "itemid": 50893,
+      "label": "Calcium, Total",
+      "completeness": 0.9041
+    },
+    {
+      "itemid": 51274,
+      "label": "PT",
+      "completeness": 0.8357
+    },
+    {
+      "itemid": 51237,
+      "label": "INR(PT)",
+      "completeness": 0.8356
+    },
+    {
+      "itemid": 51275,
+      "label": "PTT",
+      "completeness": 0.8292
+    },
+    {
+      "itemid": 50820,
+      "label": "pH",
+      "completeness": 0.5719
+    },
+    {
+      "itemid": 50802,
+      "label": "Base Excess",
+      "completeness": 0.5537
+    },
+    {
+      "itemid": 50821,
+      "label": "pO2",
+      "completeness": 0.5537
+    },
+    {
+      "itemid": 50818,
+      "label": "pCO2",
+      "completeness": 0.5536
+    },
+    {
+      "itemid": 50813,
+      "label": "Lactate",
+      "completeness": 0.5516
+    },
+    {
+      "itemid": 50878,
+      "label": "Asparate Aminotransferase (AST)",
+      "completeness": 0.4375
+    },
+    {
+      "itemid": 50861,
+      "label": "Alanine Aminotransferase (ALT)",
+      "completeness": 0.4347
+    },
+    {
+      "itemid": 50863,
+      "label": "Alkaline Phosphatase",
+      "completeness": 0.4317
+    },
+    {
+      "itemid": 50885,
+      "label": "Bilirubin, Total",
+      "completeness": 0.4308
+    },
+    {
+      "itemid": 50808,
+      "label": "Free Calcium",
+      "completeness": 0.3887
+    },
+    {
+      "itemid": 51146,
+      "label": "Basophils",
+      "completeness": 0.3579
+    },
+    {
+      "itemid": 51256,
+      "label": "Neutrophils",
+      "completeness": 0.3579
+    },
+    {
+      "itemid": 51244,
+      "label": "Lymphocytes",
+      "completeness": 0.3579
+    },
+    {
+      "itemid": 51254,
+      "label": "Monocytes",
+      "completeness": 0.3579
+    },
+    {
+      "itemid": 51200,
+      "label": "Eosinophils",
+      "completeness": 0.3579
+    },
+    {
+      "itemid": 50822,
+      "label": "Potassium, Whole Blood",
+      "completeness": 0.2793
+    },
+    {
+      "itemid": 50862,
+      "label": "Albumin",
+      "completeness": 0.2757
+    },
+    {
+      "itemid": 50954,
+      "label": "Lactate Dehydrogenase (LD)",
+      "completeness": 0.275
+    },
+    {
+      "itemid": 50809,
+      "label": "Glucose",
+      "completeness": 0.2742
+    },
+    {
+      "itemid": 50817,
+      "label": "Oxygen Saturation",
+      "completeness": 0.2614
+    },
+    {
+      "itemid": 50910,
+      "label": "Creatine Kinase (CK)",
+      "completeness": 0.2532
+    },
+    {
+      "itemid": 50911,
+      "label": "Creatine Kinase, MB Isoenzyme",
+      "completeness": 0.246
+    },
+    {
+      "itemid": 51214,
+      "label": "Fibrinogen, Functional",
+      "completeness": 0.2377
+    },
+    {
+      "itemid": 50824,
+      "label": "Sodium, Whole Blood",
+      "completeness": 0.2301
+    },
+    {
+      "itemid": 50811,
+      "label": "Hemoglobin",
+      "completeness": 0.217
+    },
+    {
+      "itemid": 50806,
+      "label": "Chloride, Whole Blood",
+      "completeness": 0.2022
+    },
+    {
+      "itemid": 52073,
+      "label": "Absolute Eosinophil Count",
+      "completeness": 0.2016
+    },
+    {
+      "itemid": 51133,
+      "label": "Absolute Lymphocyte Count",
+      "completeness": 0.2016
+    },
+    {
+      "itemid": 52069,
+      "label": "Absolute Basophil Count",
+      "completeness": 0.2016
+    },
+    {
+      "itemid": 52074,
+      "label": "Absolute Monocyte Count",
+      "completeness": 0.2016
+    },
+    {
+      "itemid": 52075,
+      "label": "Absolute Neutrophil Count",
+      "completeness": 0.2016
+    },
+    {
+      "itemid": 51003,
+      "label": "Troponin T",
+      "completeness": 0.1889
+    },
+    {
+      "itemid": 52135,
+      "label": "Immature Granulocytes",
+      "completeness": 0.1604
+    },
+    {
+      "itemid": 50993,
+      "label": "Thyroid Stimulating Hormone",
+      "completeness": 0.1008
+    },
+    {
+      "itemid": 51000,
+      "label": "Triglycerides",
+      "completeness": 0.0962
+    },
+    {
+      "itemid": 50852,
+      "label": "% Hemoglobin A1c",
+      "completeness": 0.0895
+    },
+    {
+      "itemid": 51144,
+      "label": "Bands",
+      "completeness": 0.0797
+    },
+    {
+      "itemid": 50907,
+      "label": "Cholesterol, Total",
+      "completeness": 0.0727
+    },
+    {
+      "itemid": 51251,
+      "label": "Metamyelocytes",
+      "completeness": 0.0718
+    },
+    {
+      "itemid": 50956,
+      "label": "Lipase",
+      "completeness": 0.0718
+    },
+    {
+      "itemid": 50904,
+      "label": "Cholesterol, HDL",
+      "completeness": 0.0713
+    },
+    {
+      "itemid": 51255,
+      "label": "Myelocytes",
+      "completeness": 0.0702
+    },
+    {
+      "itemid": 51143,
+      "label": "Atypical Lymphocytes",
+      "completeness": 0.0675
+    },
+    {
+      "itemid": 50924,
+      "label": "Ferritin",
+      "completeness": 0.0545
+    },
+    {
+      "itemid": 50867,
+      "label": "Amylase",
+      "completeness": 0.0516
+    },
+    {
+      "itemid": 50952,
+      "label": "Iron",
+      "completeness": 0.0484
+    },
+    {
+      "itemid": 50964,
+      "label": "Osmolality, Measured",
+      "completeness": 0.0468
+    },
+    {
+      "itemid": 50998,
+      "label": "Transferrin",
+      "completeness": 0.0463
+    },
+    {
+      "itemid": 50953,
+      "label": "Iron Binding Capacity, Total",
+      "completeness": 0.0462
+    },
+    {
+      "itemid": 51009,
+      "label": "Vancomycin",
+      "completeness": 0.0366
+    },
+    {
+      "itemid": 50935,
+      "label": "Haptoglobin",
+      "completeness": 0.0364
+    },
+    {
+      "itemid": 50823,
+      "label": "Required O2",
+      "completeness": 0.0359
+    },
+    {
+      "itemid": 50801,
+      "label": "Alveolar-arterial Gradient",
+      "completeness": 0.0359
+    },
+    {
+      "itemid": 51257,
+      "label": "Nucleated Red Cells",
+      "completeness": 0.0331
+    },
+    {
+      "itemid": 50883,
+      "label": "Bilirubin, Direct",
+      "completeness": 0.0329
+    },
+    {
+      "itemid": 51283,
+      "label": "Reticulocyte Count, Automated",
+      "completeness": 0.0312
+    },
+    {
+      "itemid": 50963,
+      "label": "NTproBNP",
+      "completeness": 0.0305
+    },
+    {
+      "itemid": 50884,
+      "label": "Bilirubin, Indirect",
+      "completeness": 0.0303
+    },
+    {
+      "itemid": 50889,
+      "label": "C-Reactive Protein",
+      "completeness": 0.0268
+    },
+    {
+      "itemid": 50815,
+      "label": "O2 Flow",
+      "completeness": 0.0231
+    },
+    {
+      "itemid": 50909,
+      "label": "Cortisol",
+      "completeness": 0.0231
+    },
+    {
+      "itemid": 51657,
+      "label": "HPE1",
+      "completeness": 0.0229
+    },
+    {
+      "itemid": 51663,
+      "label": "HPE7",
+      "completeness": 0.0221
+    },
+    {
+      "itemid": 51010,
+      "label": "Vitamin B12",
+      "completeness": 0.0217
+    },
+    {
+      "itemid": 51282,
+      "label": "Reticulocyte Count, Absolute",
+      "completeness": 0.021
+    },
+    {
+      "itemid": 51659,
+      "label": "HPE3",
+      "completeness": 0.0203
+    }
+  ],
+  "excluded": {
+    "derived": [
+      "Anion Gap",
+      "CK-MB Index",
+      "Calculated Total CO2",
+      "Cholesterol Ratio (Total/HDL)",
+      "Cholesterol, LDL, Calculated",
+      "Hematocrit, Calculated",
+      "MCH",
+      "MCHC",
+      "MCV",
+      "RDW",
+      "RDW-SD",
+      "eAG"
+    ],
+    "non_analyte": [
+      "H",
+      "I",
+      "L",
+      "Oxygen",
+      "PEEP",
+      "Temperature",
+      "Tidal Volume"
+    ],
+    "non_blood": [
+      "Chloride, Urine",
+      "Creatinine, Urine",
+      "Epithelial Cells",
+      "Glucose",
+      "Hyaline Casts",
+      "Ketone",
+      "Osmolality, Urine",
+      "Potassium, Urine",
+      "Protein",
+      "RBC",
+      "Sodium, Urine",
+      "Specific Gravity",
+      "Urea Nitrogen, Urine",
+      "Urobilinogen",
+      "WBC",
+      "pH"
+    ]
+  },
+  "duplicate_label_itemids": {
+    "glucose": [
+      50931,
+      50809
+    ],
+    "hemoglobin": [
+      51222,
+      50811
+    ]
+  }
+}

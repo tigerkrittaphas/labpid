@@ -1,0 +1,16 @@
+# Environment
+.venv
+*.DS_Store
+
+# Python
+*.pyc
+*__pycache__/
+
+# Data/Results/Output
+results/
+out/
+figures/
+
+# Claude
+.claude/
+Plan.md

@@ -10,8 +10,10 @@ cohort:                                 # T1
   adults_min_age: 18
   stays: first_icu_stay_per_patient
   anchor: icu_intime
-  feature_window_hours: 24              # W
-  target_horizon_hours: 24              # H  -> targets drawn in [t0+W, t0+W+H)
+  window_hours_before: 24               # t0 - 24h
+  window_hours_after: 24                # t0 + 24h
+  target: hospital_expire_flag          # in-hospital mortality for this admission,
+                                         # unbounded by the window
   group_key: subject_id                 # never hadm_id
 
 analytes:                               # T2

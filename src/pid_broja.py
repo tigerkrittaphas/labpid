@@ -1,16 +1,34 @@
-"""Track A — discrete Shannon PID via BROJA-2PID on binned channels.
+"""Track A — discrete Shannon PID via BROJA-2PID on binned channels, plus a
+second redundancy definition (CCS) for a construction-level contrast.
 
-This is the primary track: exact given the discretization, non-negative atoms,
-monotone lattice, DPI intact. The discretization *is* the assumption, so A5
-sweeps it.
+BROJA is the primary measure: exact given the discretization, non-negative
+atoms, monotone lattice, DPI intact. The discretization *is* the assumption,
+so A5 sweeps it.
+
+CCS (common change in surprisal, Ince) is a genuinely different construction
+-- pointwise, built from coinformation/specific-surprisal rather than an
+optimization over channels with fixed marginals -- so it can disagree with
+BROJA in ways a second optimization-based measure (e.g. MMI, which coincides
+with BROJA on Gaussian-like structure) can't. It is NOT guaranteed
+non-negative; a negative atom under CCS is a property of the measure, not a
+solver failure, and is reported as-is rather than retried.
+
+PID_Proj (Harder et al., bivariate-native) was tried and dropped: it hits a
+genuine bug in this dit version (1.5) -- `dit.pid.measures.iproj.
+projected_information` fails with `InvalidOutcome: (0, 0) is not in the
+sample space` inside its internal xarray-backed `coalesce`/`condition_on`
+calls, reproducible on a plain 2x2x2 distribution built either from numpy
+int64 or plain Python int outcome labels, so it isn't an artifact of how this
+module builds its distributions.
 """
 from __future__ import annotations
 
 import numpy as np
 import dit
-from dit.pid import PID_BROJA
+from dit.pid import PID_BROJA, PID_CCS
 
 LOG2 = np.log(2.0)
+PID_MEASURES = ("broja", "ccs")
 
 
 def joint_table(v, s, y):
@@ -52,8 +70,9 @@ BROJA_METHOD = "cone"
 NEG_TOL = 1e-9
 
 
-def broja_atoms(tab, method=BROJA_METHOD):
-    """Four BROJA atoms in nats from a (|Ṽ|, |S̃|, |Y|) count table."""
+def to_dit_distribution(tab):
+    """(|Ṽ|, |S̃|, |Y|) count table -> a dit.Distribution over rv names V,S,Y.
+    Shared by every PID measure this module supports."""
     n = tab.sum()
     pmf = {}
     for i in range(tab.shape[0]):
@@ -63,15 +82,37 @@ def broja_atoms(tab, method=BROJA_METHOD):
                     pmf[(i, j, k)] = tab[i, j, k] / n
     d = dit.Distribution(pmf)
     d.set_rv_names("VSY")
-    pid = PID_BROJA(d, [["V"], ["S"]], ["Y"], method=method)
+    return d
+
+
+def _atoms_from_pid_obj(pid_obj):
     # dit keys lattice nodes by rv name (sorted) and reports bits
-    get = lambda k: float(pid.get_pi(k)) * LOG2
+    get = lambda k: float(pid_obj.get_pi(k)) * LOG2
     return {
         "red":   get((("S",), ("V",))),
         "u_val": get((("V",),)),
         "u_str": get((("S",),)),
         "syn":   get((("S", "V"),)),
     }
+
+
+def broja_atoms(tab, method=BROJA_METHOD):
+    """Four BROJA atoms in nats from a (|Ṽ|, |S̃|, |Y|) count table."""
+    d = to_dit_distribution(tab)
+    pid = PID_BROJA(d, [["V"], ["S"]], ["Y"], method=method)
+    return _atoms_from_pid_obj(pid)
+
+
+def ccs_atoms(tab):
+    """Four CCS atoms in nats. No solver cascade: CCS isn't a numerical
+    optimization, there's nothing to retry, and a negative atom here is a
+    real property of the measure rather than a failure to detect."""
+    d = to_dit_distribution(tab)
+    pid = PID_CCS(d, [["V"], ["S"]], ["Y"])
+    a = _atoms_from_pid_obj(pid)
+    a["_converged"] = True   # kept for interface parity with broja_atoms_checked
+    a["_solver"] = "ccs"
+    return a
 
 
 SOLVER_CASCADE = ("cone", "admui", "scipy")
@@ -104,11 +145,24 @@ def broja_atoms_checked(tab, methods=SOLVER_CASCADE):
     return best
 
 
-def decompose(v, s, y, bias_correct=True):
-    """Atoms plus the node MIs, cell occupancy, and the A3 diagnostics."""
+def _atoms_for(tab, measure="broja"):
+    if measure == "broja":
+        return broja_atoms_checked(tab)
+    if measure == "ccs":
+        return ccs_atoms(tab)
+    raise ValueError(f"unknown measure {measure!r}, expected one of {PID_MEASURES}")
+
+
+def decompose(v, s, y, bias_correct=True, measure="broja"):
+    """Atoms plus the node MIs, cell occupancy, and the A3 diagnostics.
+
+    `measure` selects the redundancy definition: "broja" (default, non-negative,
+    solver cascade with a convergence check) or "ccs" (common change in
+    surprisal -- pointwise, no solver, negative atoms are a real property of
+    the measure and are reported as-is, not retried)."""
     tab, levels = joint_table(v, s, y)
     n = float(tab.sum())
-    atoms = broja_atoms_checked(tab)
+    atoms = _atoms_for(tab, measure)
     converged = atoms.pop("_converged")
     solver_used = atoms.pop("_solver")
 
@@ -129,6 +183,7 @@ def decompose(v, s, y, bias_correct=True):
     total = mi["I_joint"]
     out = {
         "n": int(n),
+        "measure": measure,
         "solver": solver_used,
         "converged": converged,
         "levels": {"V": len(levels[0]), "S": len(levels[1]), "Y": len(levels[2])},
@@ -164,21 +219,22 @@ def _perm_batch(args):
     marginal fixed, so the permutation distribution of the table is exactly
     multivariate hypergeometric over the cells. Sampling it directly means a
     worker receives 9 numbers instead of three 56k-element vectors."""
-    cell_counts, n_pos, shape, seed, k = args
+    cell_counts, n_pos, shape, seed, k, measure = args
     rng = np.random.default_rng(seed)
     cell_counts = np.asarray(cell_counts, dtype=np.int64)
     out = []
     draws = rng.multivariate_hypergeometric(cell_counts, n_pos, size=k)
     for d in draws:
         tab = np.stack([cell_counts - d, d], axis=-1).reshape(*shape, 2).astype(float)
-        # same estimator as the observed value, or the p-value compares a
-        # cascade-derived statistic against a cone-only null
-        a = broja_atoms_checked(tab)
+        # same estimator as the observed value, so the p-value compares like
+        # against like (a cascade-derived BROJA statistic against a cone-only
+        # null would be apples-to-oranges, and CCS has no cascade at all)
+        a = _atoms_for(tab, measure)
         out.append({k: v for k, v in a.items() if not k.startswith("_")})
     return out
 
 
-def permutation_null(v, s, y, n_perm=1000, seed=0, n_jobs=16, batch=25):
+def permutation_null(v, s, y, n_perm=1000, seed=0, n_jobs=16, batch=25, measure="broja"):
     """A4 — shuffle Y against (Ṽ, S̃) and recompute every atom. A four-term
     difference reliably produces nonzero values under the null, so an atom
     without this number means nothing."""
@@ -188,13 +244,15 @@ def permutation_null(v, s, y, n_perm=1000, seed=0, n_jobs=16, batch=25):
     n_pos = int(tab[..., 1].sum()) if tab.shape[2] > 1 else 0
 
     n_batches = int(np.ceil(n_perm / batch))
-    args = [(cell_counts, n_pos, shape, seed * 100_000 + i, batch) for i in range(n_batches)]
+    args = [(cell_counts, n_pos, shape, seed * 100_000 + i, batch, measure)
+            for i in range(n_batches)]
     res = [r for chunk in _pool(n_jobs).map(_perm_batch, args) for r in chunk][:n_perm]
     keys = ["red", "u_val", "u_str", "syn"]
     return {k: np.array([r[k] for r in res]) for k in keys}
 
 
-def permutation_null_budgeted(v, s, y, n_perm=1000, seed=0, n_jobs=16, budget_s=90.0):
+def permutation_null_budgeted(v, s, y, n_perm=1000, seed=0, n_jobs=16, budget_s=90.0,
+                              measure="broja"):
     """As `permutation_null`, but probe the cost first and shrink n_perm to fit a
     wall-clock budget. BROJA's optimiser is far slower on some tables than
     others (a 4-level structural summary can cost 100x a 3-level one), so a
@@ -202,14 +260,15 @@ def permutation_null_budgeted(v, s, y, n_perm=1000, seed=0, n_jobs=16, budget_s=
     The realised count is returned so it can be reported per cell."""
     import time
     t0 = time.time()
-    probe = permutation_null(v, s, y, n_perm=n_jobs, seed=seed + 7717, n_jobs=n_jobs, batch=1)
+    probe = permutation_null(v, s, y, n_perm=n_jobs, seed=seed + 7717, n_jobs=n_jobs,
+                             batch=1, measure=measure)
     per = max((time.time() - t0) / n_jobs, 1e-6)
     remaining = max(0.0, budget_s - (time.time() - t0))
     n_more = int(np.clip(remaining / per, 0, n_perm - n_jobs))
     if n_more <= 0:
         return probe, len(probe["syn"])
     rest = permutation_null(v, s, y, n_perm=n_more, seed=seed, n_jobs=n_jobs,
-                            batch=max(1, min(25, n_more // n_jobs or 1)))
+                            batch=max(1, min(25, n_more // n_jobs or 1)), measure=measure)
     out = {k: np.concatenate([probe[k], rest[k]]) for k in probe}
     return out, len(out["syn"])
 

@@ -1,5 +1,10 @@
--- T1 — Cohort: adult (anchor_age >= 18) ICU stays, FIRST stay per patient.
--- Anchor t0 = icu_intime. Feature window W = 24h, target horizon H = 24h.
+-- T1 -- Cohort: adult (anchor_age >= 18) ICU stays, FIRST stay per patient.
+-- Anchor t0 = icu_intime. Window is symmetric around t0: [t0-24h, t0+24h) --
+-- labs drawn in the 24h before ICU admission (e.g. in the ED) are visible as
+-- features, not just labs drawn after. Outcome is in-hospital mortality for
+-- this admission (hospital_expire_flag), unbounded by the window -- a death on
+-- day 20 of a long stay still counts; the window only shapes which labs are
+-- visible as features.
 -- One row per subject_id (first stay only) => hadm_id maps 1:1 to subject_id here.
 CREATE OR REPLACE TABLE `labmae.labpid.cohort` AS
 WITH ranked AS (
@@ -7,7 +12,7 @@ WITH ranked AS (
     s.subject_id,
     s.hadm_id,
     s.stay_id,
-    s.intime  AS t0,
+    s.intime   AS t0,
     s.outtime,
     s.los      AS icu_los_days,
     ROW_NUMBER() OVER (PARTITION BY s.subject_id ORDER BY s.intime ASC, s.stay_id ASC) AS rn
@@ -18,8 +23,8 @@ SELECT
   r.hadm_id,
   r.stay_id,
   r.t0,
-  TIMESTAMP_ADD(r.t0, INTERVAL 24 HOUR)  AS t_win_end,   -- t0 + W
-  TIMESTAMP_ADD(r.t0, INTERVAL 48 HOUR)  AS t_tgt_end,   -- t0 + W + H
+  TIMESTAMP_SUB(r.t0, INTERVAL 24 HOUR)  AS t_win_start,   -- t0 - 24h
+  TIMESTAMP_ADD(r.t0, INTERVAL 24 HOUR)  AS t_win_end,     -- t0 + 24h
   r.outtime,
   r.icu_los_days,
   p.anchor_age,

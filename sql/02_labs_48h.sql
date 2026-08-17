@@ -1,7 +1,8 @@
 -- Single scan of hosp.labevents: every result for a cohort patient falling in
--- [t0, t0+48h). `phase` splits the feature window from the target horizon.
---   phase = 'W'   -> [t0, t0+24h)   feature window
---   phase = 'H'   -> [t0+24, t0+48) target horizon
+-- the ICU-admission-centered window [t0-24h, t0+24h). No phase split -- the
+-- target (in-hospital mortality) is read directly from admissions.hospital_
+-- expire_flag, not derived from labs in a separate horizon, so there is no
+-- feature/target time split to encode here anymore.
 -- Joined on subject_id + time (labevents.hadm_id is nullable); rows carrying a
 -- conflicting hadm_id are excluded.
 CREATE OR REPLACE TABLE `labmae.labpid.labs_48h`
@@ -21,11 +22,10 @@ SELECT
   l.flag,
   l.priority,
   l.order_provider_id,
-  TIMESTAMP_DIFF(l.charttime, c.t0, SECOND) / 3600.0 AS hours_from_t0,
-  IF(l.charttime < c.t_win_end, 'W', 'H') AS phase
+  TIMESTAMP_DIFF(l.charttime, c.t0, SECOND) / 3600.0 AS hours_from_t0
 FROM `labmae.labpid.cohort` c
 JOIN `physionet-data.mimiciv_3_1_hosp.labevents` l
   ON l.subject_id = c.subject_id
- AND l.charttime >= c.t0
- AND l.charttime <  c.t_tgt_end
+ AND l.charttime >= c.t_win_start
+ AND l.charttime <  c.t_win_end
 WHERE (l.hadm_id IS NULL OR l.hadm_id = c.hadm_id);

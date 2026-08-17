@@ -32,7 +32,7 @@ NON_ANALYTE = {"PEEP", "Tidal Volume", "Temperature", "Oxygen", "H", "I", "L",
 
 COMPLETENESS_SQL = """
 WITH base AS (
-  SELECT COUNT(DISTINCT subject_id) AS n FROM `{ds}.labs_48h` WHERE phase = 'W'
+  SELECT COUNT(DISTINCT subject_id) AS n FROM `{ds}.labs_48h`
 )
 SELECT
   d.itemid, d.label, d.fluid, d.category,
@@ -45,7 +45,7 @@ SELECT
                         CAST(l.ref_range_upper AS STRING)))        AS n_distinct_ranges
 FROM `{ds}.labs_48h` l
 JOIN `physionet-data.mimiciv_3_1_hosp.d_labitems` d USING (itemid)
-WHERE l.phase = 'W' AND l.valuenum IS NOT NULL
+WHERE l.valuenum IS NOT NULL
 GROUP BY 1, 2, 3, 4
 ORDER BY completeness DESC
 """

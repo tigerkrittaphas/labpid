@@ -21,6 +21,43 @@ from sklearn.cluster import MiniBatchKMeans
 import pid_broja as pb
 
 
+def standardize_for_kmeans(X, sentinel=None):
+    """Prepare a feature block for kmeans_levels(). K-means minimizes
+    Euclidean distance, so unscaled columns are not equally weighted: a
+    column with 100x the raw numeric range of another dominates every
+    cluster boundary regardless of its actual signal content. Z-scoring
+    each column fixes that for an ordinary continuous block.
+
+    A single scalar `sentinel` (e.g. t3_paired_channels.TIME_SENTINEL) is a
+    harder case than an ordinary outlier: it's a real missingness code, not
+    noise, but feeding it straight into a Euclidean-distance clustering
+    inflates that column's std by 3-10x (see WORKNOTES.md 2026-08-19) and
+    the clustering ends up mostly resolving *which columns are missing*
+    rather than the real within-range signal. If `sentinel` is given, every
+    column's sentinel entries are replaced by that column's real-value mean
+    (so they stop acting as multi-hundred-sigma outliers) before z-scoring,
+    and one binary "was this value real" column per input column is
+    appended -- so missingness is still visible to k-means, just as its own
+    bounded feature instead of as an unbounded distance blowout.
+    """
+    X = np.asarray(X, dtype=np.float64)
+    if sentinel is None:
+        mu = X.mean(axis=0)
+        sd = X.std(axis=0)
+        sd = np.where(sd > 0, sd, 1.0)
+        return (X - mu) / sd
+
+    is_real = X != sentinel
+    real_or_nan = np.where(is_real, X, np.nan)
+    mu = np.nanmean(real_or_nan, axis=0)
+    sd = np.nanstd(real_or_nan, axis=0)
+    mu = np.where(np.isnan(mu), 0.0, mu)              # column with zero real entries
+    sd = np.where(np.isnan(sd) | (sd <= 0), 1.0, sd)
+    filled = np.where(is_real, X, mu)
+    z = (filled - mu) / sd
+    return np.hstack([z, is_real.astype(np.float64)])
+
+
 def kmeans_levels(X, k, seed=0):
     """One discrete level per row via MiniBatchKMeans. Levels are relabelled
     by cluster size (largest = 0) so level indices are stable across k and

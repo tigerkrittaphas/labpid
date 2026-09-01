@@ -118,7 +118,7 @@ SOLVER_CASCADE = ("cone", "admui", "scipy")
 # can spin forever. Measured on MIMIC matched-12, k=16, seed 3 (512 cells, 13 of
 # them empty, minimum non-zero count 1): `cone` was still running at 300 s, and
 # `admui` and `scipy` behave the same way, so the cascade never returns and the
-# caller hangs with no error. That is what wedged notebooks/03_matched_panel12 --
+# caller hangs with no error. That is what wedged notebooks/02_main_result --
 # 2h38m on the first attempt, 90 min on the second, both inside the k-plateau
 # sweep, both at that one cell.
 #

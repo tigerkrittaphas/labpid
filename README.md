@@ -77,12 +77,12 @@ meaningless.
 | § | Claim | Code | Result |
 |---|---|---|---|
 | 00 | cohort + input table | `sql/*`, `mimic_channels` / `eicu_channels` | `out/*.parquet` |
-| 01 | all four outcomes clear their permutation null (18–140×) | `notebooks/01` | `ijoint_gate_summary.json` |
-| 02 | composition of `I(Y;V,S)`, k=13 matched panel | `notebooks/02`, `notebooks/03` | `headline_matched_panel12.json`, `composition_across_db_and_outcome.json` |
-| 03 | unique-to-structure non-zero in MIMIC only | `src/bootstrap_ci.py` | `bootstrap_ci_matched_panel12.json`, `pid_null_calibration.json` |
-| 05 | pooling removes it dose-dependently | `notebooks/05`, `notebooks/04` | `pooling_dose_response.json`, `eicu_within_hospital.json` |
-| 07 | quantisation cost, synergy floor, k choice | `src/gcmi_pid.py`, `notebooks/06`, `notebooks/07` | `pid_gcmi_paired_channels.json`, `pid_null_calibration.json`, `k_resolution_headline_impact.json` |
-| 02 | database explains more than outcome | `notebooks/08` | `composition_across_db_and_outcome.json` |
+| 01 | all four outcomes clear their permutation null | `notebooks/01` | `ijoint_gate_summary.json` |
+| 02 | composition of `I(Y;V,S)`, k=13 matched panel | `notebooks/02` | `headline_matched_panel12.json` |
+| 02 | database explains more of the shape than outcome | `notebooks/06` | `composition_across_db_and_outcome.json` |
+| 03 | unique-to-structure non-zero in MIMIC only | `src/bootstrap_ci.py`, `notebooks/05` | `bootstrap_ci_matched_panel12.json`, `pid_null_calibration.json` |
+| 05 | pooling removes it dose-dependently | `notebooks/04`, `notebooks/03` | `pooling_dose_response.json`, `eicu_within_hospital.json` |
+| 07 | quantisation cost, synergy floor, choice of k | `src/gcmi_pid.py`, `notebooks/05`, `notebooks/02` | `pid_gcmi_paired_channels.json`, `pid_null_calibration.json`, `k_resolution_headline_impact.json` |
 
 Every result the write-up cites now has a producer in this repo. The three that
 did not -- `pid_null_calibration`, `k_resolution_headline_impact` and
@@ -108,14 +108,10 @@ PYTHONPATH=src .venv/bin/python src/bootstrap_ci.py
 ```
 
 Notebooks run in numeric order: `02_headline_broja_k13` (the k=13 protocol, which
-supersedes the retired k=7 headline) → `03_matched_panel12` (which supersedes `02` for
-every cross-database comparison) → `04_eicu_within_hospital`. `01_significance_gate` is
+supersedes the retired k=7 headline) → `02_main_result` (which supersedes `02` for
+every cross-database comparison) → `03_eicu_within_hospital`. `01_significance_gate` is
 independent of the other three.
 
-> `notebooks/01` reads `headline_k` out of `results/headline_result*.json`, which the
-> archived k=7 notebooks wrote. Those JSONs are still on disk, so it runs — but its
-> numbers are **k=7 on each database's own panel**, not the k=13 matched panel the
-> write-up's §"Resolution" note claims for §01–03. Worth re-running at k=13.
 
 ## Reading the estimators
 

@@ -37,6 +37,7 @@ import multiprocessing as mp
 import time
 
 import numpy as np
+import pandas as pd
 
 import bqutil
 import pid_broja as pb
@@ -56,20 +57,33 @@ def _init(Xv, Xs, y, sentinel, k):
 def _one(rep: int):
     """One bootstrap replicate: resample patients, refit the codebook, decompose.
 
-    The replicate index doubles as the k-means seed, so no two replicates share
-    a clustering -- that is what nests discretisation variance inside the
-    interval rather than beside it.
+    The replicate index doubles as the k-means seed, so no two replicates share a
+    clustering -- that is what nests discretisation variance inside the interval
+    rather than beside it.
+
+    SHARED CODEBOOK (2026-09-01). The resample and the codebook are taken over the
+    FULL cohort, and the target's rows are selected afterwards. `y` is therefore
+    full-length with NaN where the target is undefined. Because the draw is seeded
+    by `rep` alone, every target in a database sees the same patients and the same
+    13 levels in replicate `rep` -- so the intervals share the vocabulary the point
+    estimates use, while each replicate still gets its own clustering.
+
+    Fitting on the target's own rows instead would give each outcome a private
+    alphabet, which is the confound removed from the headline in notebooks/02.
     """
     Xv, Xs, y, sentinel, k = (_G["Xv"], _G["Xs"], _G["y"], _G["sentinel"], _G["k"])
     n = len(y)
     rng = np.random.default_rng(100_000 + rep)
     idx = rng.integers(0, n, n)
-    yb = y[idx]
-    if len(np.unique(yb)) < 2:                    # degenerate draw, drop it
-        return None
 
     v, _ = qz.kmeans_levels(qz.standardize_for_kmeans(Xv[idx]), k, seed=rep)
     s, _ = qz.kmeans_levels(qz.standardize_for_kmeans(Xs[idx], sentinel=sentinel), k, seed=rep)
+
+    yb_all = y[idx]
+    defined = np.isfinite(yb_all)                 # drop rows with no target value
+    v, s, yb = v[defined], s[defined], yb_all[defined].astype(int)
+    if len(np.unique(yb)) < 2:                    # degenerate draw, drop it
+        return None
 
     out = {}
     for measure in MEASURES:
@@ -94,7 +108,8 @@ def bootstrap(Xv, Xs, y, groups, sentinel, k=13, n_boot=1000, n_jobs=16):
     with ctx.Pool(n_jobs, initializer=_init, initargs=(Xv, Xs, y, sentinel, k)) as pool:
         reps = pool.map(_one, range(n_boot), chunksize=8)
 
-    summary = {"k": k, "n": int(len(y)), "n_boot_requested": n_boot,
+    summary = {"k": k, "n": int(np.isfinite(y).sum()), "n_full_cohort": int(len(y)),
+               "n_boot_requested": n_boot,
                "runtime_s": time.time() - t0, "measures": {}}
     for measure in MEASURES:
         vals = [r[measure] for r in reps if r is not None and r.get(measure) is not None]
@@ -129,8 +144,13 @@ def main(n_boot: int = 1000, k: int = 13, n_jobs: int = 16):
     for db, mod, cc in dbs:
         demo, _ = mod.demographic_targets()
         for target in TARGETS:
-            ch = cc if target == "mortality" else mod.retarget(cc, demo[target], target)
-            r = bootstrap(ch.Xv, ch.Xs, ch.y, ch.groups, mod.TIME_SENTINEL,
+            # y aligned to the FULL cohort, NaN where the target is undefined, so
+            # the resample and the codebook are always over the whole cohort.
+            if target == "mortality":
+                y_full = np.asarray(cc.y, dtype=float)
+            else:
+                y_full = demo[target].reindex(pd.Index(cc.groups)).to_numpy(dtype=float)
+            r = bootstrap(cc.Xv, cc.Xs, y_full, cc.groups, mod.TIME_SENTINEL,
                           k=k, n_boot=n_boot, n_jobs=n_jobs)
             results[f"{db}/{target}"] = r
             b = r["measures"]["broja"]
@@ -143,7 +163,10 @@ def main(n_boot: int = 1000, k: int = 13, n_jobs: int = 16):
     payload = {
         "design": ("Patient-level bootstrap with the k-means codebook REFIT inside each replicate, "
                    "so discretisation uncertainty is nested inside sampling uncertainty and one "
-                   "interval covers both. Percentile CIs."),
+                   "interval covers both. Percentile CIs. The resample and the codebook are taken "
+                   "over the FULL cohort and the target's rows selected afterwards, so all four "
+                   "outcomes share one vocabulary per replicate -- matching the shared-codebook "
+                   "convention of the point estimates."),
         "supersedes": ("the `_sd` fields in results/headline_matched_panel12.json and "
                        "results/headline_broja_k13.json, which are SD across 5 k-means seeds with the "
                        "patient sample held fixed -- a discretisation-stability measure, not a CI"),

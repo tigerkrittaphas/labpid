@@ -145,15 +145,16 @@ def main():
     for db in ("MIMIC-IV", "eICU-CRD"):
         row = {r["k"]: r["worst_sd"] for r in fx if r["db"] == db}
         w(f"| {db} | " + " | ".join(f"{row[k]:.2f}" for k in ks) + " |")
-    deg = ksw["why_k13"]["degeneracy_above_k13"]
+    kc = ksw.get("k_chosen", 13)
+    deg = ksw.get("degeneracy", [])
     if deg:
-        w("\nSolver degeneracy above k=13: " + "; ".join(
-            f"{d['db']} k={d['k']} — {d['n_seeds_failed']}/5 seeds fail, "
-            f"{d['mean_empty_cells']:.1f} empty cells" for d in deg) + ".")
+        w(f"\nSolver degeneracy above k={kc}: " + "; ".join(
+            f"{d['db']} k={d['k']} — {d['n_seeds_failed']}/{len(ksw['seeds'])} seeds fail, "
+            f"{d['empty_cells']:.1f} empty cells" for d in deg) + ".")
     cv = ksw["collapse_verdict"]
-    w(f"\nCollapse: diverges from k={cv['first_k_diverging_by_1pt_synergy']}; at k>=13 it shifts "
-      f"unique-to-value by {cv['mean_u_val_shift_at_k_ge_13']:+.1f} and synergy by "
-      f"{cv['mean_syn_shift_at_k_ge_13']:+.1f} points, and widens seed spread in "
+    w(f"\nCollapse: diverges from k={cv['first_k_diverging_by_1pt_synergy']}; at k>={kc} it shifts "
+      f"unique-to-value by {cv['mean_u_val_shift_at_k_ge_chosen']:+.1f} and synergy by "
+      f"{cv['mean_syn_shift_at_k_ge_chosen']:+.1f} points, and widens seed spread in "
       f"{cv['n_combinations_where_collapse_has_larger_seed_spread']}/"
       f"{cv['n_combinations_total']} (db,k) combinations.")
 

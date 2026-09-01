@@ -74,7 +74,7 @@ def kmeans_levels(X, k, seed=0):
     # a ~120x SLOWDOWN, because the batch is only 4,096 rows and the per-batch
     # OpenMP fork/join overhead swamps the work -- n_init=10 x max_iter=300 means
     # up to 3,000 of those parallel regions per call. Uncapped, this is what hung
-    # notebooks/03_matched_panel12 for 2h38m and 58 CPU-hours in what should be a
+    # notebooks/02_main_result for 2h38m and 58 CPU-hours in what should be a
     # ~2 min cell, and what put bootstrap_ci (1,000 refits) 2x over its runtime.
     # Verified label-for-label identical to the unpinned result, so this is a
     # pure speed fix -- it changes no number this project reports.

@@ -1,0 +1,382 @@
+{
+  "source": "physionet-data.eicu_crd.lab",
+  "core_threshold": 0.95,
+  "discretionary_floor": 0.02,
+  "n_cohort_with_window_labs": 131679,
+  "core": [
+    {
+      "labname": "potassium",
+      "completeness": 0.9558
+    },
+    {
+      "labname": "creatinine",
+      "completeness": 0.9557
+    },
+    {
+      "labname": "sodium",
+      "completeness": 0.9555
+    },
+    {
+      "labname": "Hct",
+      "completeness": 0.9546
+    },
+    {
+      "labname": "BUN",
+      "completeness": 0.9536
+    },
+    {
+      "labname": "glucose",
+      "completeness": 0.9504
+    }
+  ],
+  "discretionary": [
+    {
+      "labname": "chloride",
+      "completeness": 0.95
+    },
+    {
+      "labname": "Hgb",
+      "completeness": 0.9491
+    },
+    {
+      "labname": "WBC x 1000",
+      "completeness": 0.9483
+    },
+    {
+      "labname": "RBC",
+      "completeness": 0.9409
+    },
+    {
+      "labname": "platelets x 1000",
+      "completeness": 0.9354
+    },
+    {
+      "labname": "calcium",
+      "completeness": 0.928
+    },
+    {
+      "labname": "MCV",
+      "completeness": 0.9176
+    },
+    {
+      "labname": "MCHC",
+      "completeness": 0.9174
+    },
+    {
+      "labname": "bicarbonate",
+      "completeness": 0.9006
+    },
+    {
+      "labname": "RDW",
+      "completeness": 0.8801
+    },
+    {
+      "labname": "MCH",
+      "completeness": 0.8764
+    },
+    {
+      "labname": "anion gap",
+      "completeness": 0.7553
+    },
+    {
+      "labname": "-lymphs",
+      "completeness": 0.6926
+    },
+    {
+      "labname": "-monos",
+      "completeness": 0.6872
+    },
+    {
+      "labname": "-eos",
+      "completeness": 0.6588
+    },
+    {
+      "labname": "albumin",
+      "completeness": 0.6517
+    },
+    {
+      "labname": "MPV",
+      "completeness": 0.6434
+    },
+    {
+      "labname": "AST (SGOT)",
+      "completeness": 0.6377
+    },
+    {
+      "labname": "-basos",
+      "completeness": 0.6325
+    },
+    {
+      "labname": "ALT (SGPT)",
+      "completeness": 0.6314
+    },
+    {
+      "labname": "total protein",
+      "completeness": 0.6298
+    },
+    {
+      "labname": "alkaline phos.",
+      "completeness": 0.6238
+    },
+    {
+      "labname": "-polys",
+      "completeness": 0.6229
+    },
+    {
+      "labname": "total bilirubin",
+      "completeness": 0.6152
+    },
+    {
+      "labname": "bedside glucose",
+      "completeness": 0.6095
+    },
+    {
+      "labname": "PT - INR",
+      "completeness": 0.5921
+    },
+    {
+      "labname": "magnesium",
+      "completeness": 0.5836
+    },
+    {
+      "labname": "PT",
+      "completeness": 0.5768
+    },
+    {
+      "labname": "PTT",
+      "completeness": 0.4423
+    },
+    {
+      "labname": "FiO2",
+      "completeness": 0.4204
+    },
+    {
+      "labname": "paO2",
+      "completeness": 0.4142
+    },
+    {
+      "labname": "paCO2",
+      "completeness": 0.4105
+    },
+    {
+      "labname": "pH",
+      "completeness": 0.407
+    },
+    {
+      "labname": "HCO3",
+      "completeness": 0.3917
+    },
+    {
+      "labname": "O2 Sat (%)",
+      "completeness": 0.3561
+    },
+    {
+      "labname": "phosphate",
+      "completeness": 0.3514
+    },
+    {
+      "labname": "lactate",
+      "completeness": 0.3502
+    },
+    {
+      "labname": "urinary specific gravity",
+      "completeness": 0.3303
+    },
+    {
+      "labname": "Base Excess",
+      "completeness": 0.3213
+    },
+    {
+      "labname": "troponin - I",
+      "completeness": 0.2619
+    },
+    {
+      "labname": "CPK",
+      "completeness": 0.2356
+    },
+    {
+      "labname": "ionized calcium",
+      "completeness": 0.1805
+    },
+    {
+      "labname": "Total CO2",
+      "completeness": 0.1737
+    },
+    {
+      "labname": "TSH",
+      "completeness": 0.1567
+    },
+    {
+      "labname": "triglycerides",
+      "completeness": 0.1531
+    },
+    {
+      "labname": "CPK-MB",
+      "completeness": 0.1498
+    },
+    {
+      "labname": "HDL",
+      "completeness": 0.1381
+    },
+    {
+      "labname": "total cholesterol",
+      "completeness": 0.1376
+    },
+    {
+      "labname": "lipase",
+      "completeness": 0.1287
+    },
+    {
+      "labname": "BNP",
+      "completeness": 0.1265
+    },
+    {
+      "labname": "direct bilirubin",
+      "completeness": 0.1234
+    },
+    {
+      "labname": "Carboxyhemoglobin",
+      "completeness": 0.1206
+    },
+    {
+      "labname": "PEEP",
+      "completeness": 0.1164
+    },
+    {
+      "labname": "Methemoglobin",
+      "completeness": 0.1162
+    },
+    {
+      "labname": "Temperature",
+      "completeness": 0.1157
+    },
+    {
+      "labname": "LDL",
+      "completeness": 0.1017
+    },
+    {
+      "labname": "-bands",
+      "completeness": 0.0981
+    },
+    {
+      "labname": "TV",
+      "completeness": 0.0979
+    },
+    {
+      "labname": "Base Deficit",
+      "completeness": 0.0863
+    },
+    {
+      "labname": "Respiratory Rate",
+      "completeness": 0.0861
+    },
+    {
+      "labname": "fibrinogen",
+      "completeness": 0.0763
+    },
+    {
+      "labname": "CPK-MB INDEX",
+      "completeness": 0.0724
+    },
+    {
+      "labname": "O2 Content",
+      "completeness": 0.0682
+    },
+    {
+      "labname": "LPM O2",
+      "completeness": 0.0679
+    },
+    {
+      "labname": "Vent Rate",
+      "completeness": 0.0653
+    },
+    {
+      "labname": "WBC's in urine",
+      "completeness": 0.0572
+    },
+    {
+      "labname": "ammonia",
+      "completeness": 0.0499
+    },
+    {
+      "labname": "troponin - T",
+      "completeness": 0.0497
+    },
+    {
+      "labname": "Oxyhemoglobin",
+      "completeness": 0.0481
+    },
+    {
+      "labname": "amylase",
+      "completeness": 0.0437
+    },
+    {
+      "labname": "free T4",
+      "completeness": 0.0416
+    },
+    {
+      "labname": "urinary sodium",
+      "completeness": 0.0403
+    },
+    {
+      "labname": "serum osmolality",
+      "completeness": 0.0384
+    },
+    {
+      "labname": "Pressure Support",
+      "completeness": 0.0372
+    },
+    {
+      "labname": "Fe",
+      "completeness": 0.0363
+    },
+    {
+      "labname": "urinary creatinine",
+      "completeness": 0.032
+    },
+    {
+      "labname": "ESR",
+      "completeness": 0.0309
+    },
+    {
+      "labname": "Vitamin B12",
+      "completeness": 0.0306
+    },
+    {
+      "labname": "LDH",
+      "completeness": 0.0304
+    },
+    {
+      "labname": "Ferritin",
+      "completeness": 0.028
+    },
+    {
+      "labname": "TIBC",
+      "completeness": 0.0279
+    },
+    {
+      "labname": "cortisol",
+      "completeness": 0.0272
+    },
+    {
+      "labname": "ethanol",
+      "completeness": 0.0252
+    },
+    {
+      "labname": "Fe/TIBC Ratio",
+      "completeness": 0.0218
+    },
+    {
+      "labname": "CRP",
+      "completeness": 0.0215
+    },
+    {
+      "labname": "urinary osmolality",
+      "completeness": 0.0209
+    },
+    {
+      "labname": "folate",
+      "completeness": 0.0208
+    }
+  ]
+}

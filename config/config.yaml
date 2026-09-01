@@ -1,57 +1,74 @@
-# Experiment 1 — Value/Structure PID. Run configuration.
-# Companion to config/itemids.resolved.json, which is regenerated at runtime.
+# LABPID -- value/structure PID. Run configuration.
+#
+# Documentation only: no code reads this file. Analyte identity lives in
+# config/itemids.resolved.json + config/eicu_labnames.resolved.json, both
+# regenerated at runtime by src/mimic_resolve_itemids.py / src/eicu_resolve_labnames.py.
 
 source:
-  project: labmae                       # billing / working project
-  mimic:   physionet-data.mimiciv_3_1   # hosp.*, icu.*
-  workset: labmae.labpid                # cohort, labs_48h, ref_canon, channels
+  project: labmae                          # billing / working project
+  mimic:   physionet-data.mimiciv_3_1      # hosp.*, icu.*
+  eicu:    physionet-data.eicu_crd
+  workset_mimic: labmae.labpid             # cohort, labs_48h, paired_channels
+  workset_eicu:  labmae.labpid_eicu        # separate dataset -- an eICU script can
+                                           # never CREATE OR REPLACE over MIMIC's cohort
 
-cohort:                                 # T1
+cohort:
   adults_min_age: 18
   stays: first_icu_stay_per_patient
-  anchor: icu_intime
-  window_hours_before: 24               # t0 - 24h
-  window_hours_after: 24                # t0 + 24h
-  target: hospital_expire_flag          # in-hospital mortality for this admission,
-                                         # unbounded by the window
-  group_key: subject_id                 # never hadm_id
+  anchor: icu_intime                       # eICU is offset-native: unit admission = 0
+  window_hours_before: 24                  # t0 - 24h
+  window_hours_after: 24                   # t0 + 24h
+  group_key: subject_id                    # never hadm_id (uniquepid on eICU)
 
-analytes:                               # T2
-  core_completeness_threshold: 0.95     # -> value channel
-  discretionary_floor: 0.02             # -> structural mask/counts
+channels:
+  # First and last draw per (patient, analyte), selected by TIME alone -- never by
+  # value. "The time of the worst result" is a fact about the value, so a min/max-by-
+  # value rule would leak V into S and destroy the separation the whole design rests on.
+  value:     [first_result, last_result]         # 12 analytes x 2 = 24 dims
+  structure: [time_first, time_last]             # hours from t0; 24 dims
+  time_sentinel: -999.0                          # unambiguously "never ordered"
+  missingness_arms: [complete_case, impute_mean, impute_mice]
+  headline_arm: complete_case
+
+analytes:
+  core_completeness_threshold: 0.95
   fluid: Blood
-  exclude_derived: true                 # arithmetic functions of other analytes
-  reference_ranges: canonical_modal_per_itemid_and_gender
+  exclude_derived: true                    # arithmetic functions of other analytes
+  panel: matched_12                        # intersection of both databases' core sets
+  matched_12: [BUN, Hct, Hgb, RBC, WBC, bicarbonate, chloride, creatinine,
+               glucose, platelets, potassium, sodium]
+  magnesium_dropped_from: MIMIC-IV         # eICU coverage 0.5836 would cost 46.1% of
+                                           # its cohort and select a 1.47x
+                                           # higher-mortality subpopulation
 
-targets:                                # T5
-  - {itemid: 51265, label: Platelet Count,     partner: 51222}
-  - {itemid: 51301, label: White Blood Cells,  partner: 51222}
-  - {itemid: 50912, label: Creatinine,         partner: 51006}
-  - {itemid: 51222, label: Hemoglobin,         partner: 51221, role: positive_control}
-  - {itemid: 51006, label: Urea Nitrogen,      partner: 50912}
-  - {itemid: 50882, label: Bicarbonate,        partner: 50902}
+outcomes:
+  - hospital_expire_flag                   # in-hospital mortality, unbounded by window
+  - gender_female
+  - age_ge65
+  - race_binary                            # MIMIC: White vs Black/African American
+                                           # eICU:  Caucasian vs African American
+  # Race is a SPECIFICITY PROBE, not a prediction target -- no physiological pathway
+  # connects draw timing to self-reported race. Sex and age are NOT negative controls:
+  # both have genuine physiological links to lab values.
 
-track_a:                                # discrete BROJA, PRIMARY
-  solver: cone                          # exponential cone (Makkeh et al. 2018)
-  solver_cascade: [cone, admui, scipy]  # only on a non-negativity failure
-  n_permutations: 1000
-  min_cell_count: 20                    # A6 occupancy gate
-  collapse_min_shares: [0.02, 0.05, 0.10, 0.20]
-  min_levels: 2                         # never collapse a summary to a constant
-  v_schemes: [refrange3, refrange2, tertile3, quartile4]
-  s_schemes: [amlab3, amlab2, offhours3, nspec3, gapcv3, discmask3, discmask4, stat3]
-
-track_b:                                # V-information, SECONDARY
-  folds: 5                              # StratifiedGroupKFold, groups=subject_id
-  probe_grid:                           # (hidden_sizes, weight_decay)
-    - [[],              0.01]
-    - [[16],            1.0]
-    - [[32],            0.1]
-    - [[64, 32],        0.01]
-    - [[128, 64],       0.001]
-    - [[512, 512, 256], 0.0001]
-  probe_selection: argmax(I_V_joint - shuffle_floor)
-  floor_seeds: [0, 1]
-  marginal_entropy: analytic_crossfit_base_rate
-  bootstrap_draws: 2000
+decomposition:
+  k: 13                                    # atoms converge here and seed spread stops
+                                           # narrowing; k=5 in the within-hospital arm,
+                                           # forced by site sample size (max 3,803)
+  grid: fixed_pre_collapse                 # collapse_for_occupancy NOT applied
+  seeds: [0, 1, 2, 3, 4]
+  primary_measure: broja                   # non-negative by construction
+  sensitivity_measure: ccs                 # pointwise; negative atoms are definitional
+  solver: cone                             # exponential cone (Makkeh et al. 2018)
+  solver_cascade: [cone, admui, scipy]     # only on a non-negativity failure
+  cross_check: gcmi                        # Gaussian-copula PID, zero tunable knobs
   units: nats
+
+inference:
+  significance_null: permute_outcome_against_fixed_joint_cells
+  n_permutations: 1000
+  calibration_null: permute_S_within_strata_of_V   # forces true u_str and syn to zero
+  n_calibration_permutations: 200                  # per cell, 16 cells
+  bootstrap_draws: 1000
+  bootstrap_refits_codebook: true          # nests discretisation inside sampling, so
+                                           # one interval covers both sources

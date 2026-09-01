@@ -102,16 +102,6 @@
       "completeness": 0.7245
     },
     {
-      "itemid": 51244,
-      "label": "Lymphocytes",
-      "completeness": 0.7208
-    },
-    {
-      "itemid": 51254,
-      "label": "Monocytes",
-      "completeness": 0.7208
-    },
-    {
       "itemid": 51146,
       "label": "Basophils",
       "completeness": 0.7208
@@ -119,6 +109,16 @@
     {
       "itemid": 51200,
       "label": "Eosinophils",
+      "completeness": 0.7208
+    },
+    {
+      "itemid": 51244,
+      "label": "Lymphocytes",
+      "completeness": 0.7208
+    },
+    {
+      "itemid": 51254,
+      "label": "Monocytes",
       "completeness": 0.7208
     },
     {
@@ -197,6 +197,11 @@
       "completeness": 0.3968
     },
     {
+      "itemid": 52069,
+      "label": "Absolute Basophil Count",
+      "completeness": 0.3968
+    },
+    {
       "itemid": 52073,
       "label": "Absolute Eosinophil Count",
       "completeness": 0.3968
@@ -204,11 +209,6 @@
     {
       "itemid": 52074,
       "label": "Absolute Monocyte Count",
-      "completeness": 0.3968
-    },
-    {
-      "itemid": 52069,
-      "label": "Absolute Basophil Count",
       "completeness": 0.3968
     },
     {

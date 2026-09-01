@@ -47,7 +47,7 @@ FROM `{ds}.labs_48h` l
 JOIN `physionet-data.mimiciv_3_1_hosp.d_labitems` d USING (itemid)
 WHERE l.valuenum IS NOT NULL
 GROUP BY 1, 2, 3, 4
-ORDER BY completeness DESC
+ORDER BY completeness DESC, itemid ASC   -- itemid breaks completeness ties
 """
 
 
@@ -75,8 +75,15 @@ def main():
     df = classify(df)
     df.to_csv(bqutil.ROOT / "out" / "completeness_table.csv", index=False)
 
-    core = df[df.role == "core"].sort_values("completeness", ascending=False)
-    disc = df[df.role == "discretionary"].sort_values("completeness", ascending=False)
+    # itemid is the tiebreak: completeness ties are common (13 core analytes carry
+    # only 10 distinct values) and without it BigQuery's arbitrary row order for
+    # tied rows makes this file differ between identical runs. Analyte order is
+    # numerically inert downstream -- Euclidean distance is permutation-invariant
+    # across feature columns, so k-means returns the same partition either way --
+    # but a config that changes when nothing changed is a reproducibility trap.
+    sort = lambda d: d.sort_values(["completeness", "itemid"], ascending=[False, True])
+    core = sort(df[df.role == "core"])
+    disc = sort(df[df.role == "discretionary"])
 
     # Duplicate-concept check: the same normalized label resolving to >1 itemid.
     norm = df.assign(key=df.label.str.lower().str.strip())

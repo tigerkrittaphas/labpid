@@ -1,17 +1,16 @@
-"""Validation suite for t3_paired_channels.retarget() -- the helper that lets
-demographic (or any other) targets reuse an already-built arm's Xv/Xs without
-rebuilding the wide table. Needs the local BigQuery cache (out/*.parquet);
-does not touch demographic data, so it doesn't depend on config/race_bucket_map.json
-or a live cohort_demo pull.
+"""Validation suite for eicu_channels.retarget() -- ports
+test_mimic_channels.py's checks onto the eICU module unchanged (same
+three checks: no-op regression, bit-identity on retained rows, no leakage).
+Needs the local eICU BigQuery cache (out/eicu_*.parquet).
 
-    PYTHONPATH=src .venv/bin/python src/test_t3_paired_channels.py
+    PYTHONPATH=src .venv/bin/python src/test_eicu_channels.py
 """
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-import t3_paired_channels as t3
+import eicu_channels as eicu
 
 PASS, FAIL = "PASS", "**FAIL**"
 results = []
@@ -26,9 +25,9 @@ def check(name, ok, detail):
 def test_retarget_noop():
     """Feeding an arm's own target back through retarget() must be a true
     no-op: same n, zero drops, byte-identical Xv/y/groups."""
-    cc = t3.complete_case()
+    cc = eicu.complete_case()
     y_series = pd.Series(cc.y.astype(float), index=cc.groups)
-    rt = t3.retarget(cc, y_series, "hospital_expire_flag")
+    rt = eicu.retarget(cc, y_series, "hospital_expire_flag")
 
     check("no-op: n unchanged", rt.meta["n"] == cc.meta["n"],
           f"rt.n={rt.meta['n']} cc.n={cc.meta['n']}")
@@ -52,7 +51,7 @@ def test_retarget_with_nulls(cc):
     y_raw[drop_mask] = np.nan
     y_series = pd.Series(y_raw, index=cc.groups)
 
-    rt = t3.retarget(cc, y_series, "synthetic_target")
+    rt = eicu.retarget(cc, y_series, "synthetic_target")
 
     keep_expected = ~drop_mask
     check("nulls: retained count matches expected keep-mask",
@@ -78,7 +77,7 @@ def test_retarget_with_nulls(cc):
 
 
 def main():
-    print("\n=== t3_paired_channels.retarget() ===")
+    print("\n=== eicu_channels.retarget() ===")
     cc = test_retarget_noop()
     test_retarget_with_nulls(cc)
 

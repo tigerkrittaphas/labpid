@@ -1,5 +1,5 @@
 """T3 -- paired value/time channels: first & last draw per analyte, selected
-by time alone, never by value (sql/04_paired_channels.sql). V and S are
+by time alone, never by value (sql/mimic_03_paired_channels.sql). V and S are
 separable by construction, so the audit is a one-line suffix check instead of
 a maintained column list, and nothing needs to be redacted.
 
@@ -22,7 +22,7 @@ Default itemid scope is the core analyte set: complete-case over the full
 ~84-analyte discretionary set will shred the sample size, so CORE is the
 primary arm and DISC is a stress test, not swapped by default.
 
-    PYTHONPATH=src .venv/bin/python src/t3_paired_channels.py
+    PYTHONPATH=src .venv/bin/python src/mimic_channels.py
 """
 from __future__ import annotations
 
@@ -82,7 +82,7 @@ def _pull_demo(refresh=False):
     """subject_id, race -- decoupled cache (own cache key), does not touch
     out/cohort.parquet or the "cohort" cache key that the mortality pipeline
     depends on. `race` already lives in the BigQuery `cohort` table
-    (sql/01_cohort.sql), just not in _pull()'s narrower local cache."""
+    (sql/mimic_01_cohort.sql), just not in _pull()'s narrower local cache."""
     return bqutil.cache("cohort_demo", "SELECT subject_id, race FROM `{ds}.cohort`", refresh)
 
 

@@ -10,10 +10,11 @@
 results/
 out/
 figures/
+archive/
+manuscript/
 
 # Claude
 .claude/
 Plan.md
 
-# Old files
-archive/
+

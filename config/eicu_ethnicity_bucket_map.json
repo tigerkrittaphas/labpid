@@ -1,0 +1,40 @@
+{
+  "source_query": "sql recon 2026-08-19: SELECT ethnicity, COUNT(*) n, COUNTIF(hospital_expire_flag=1) deaths, AVG(hospital_expire_flag) mortality_rate FROM labmae.labpid_eicu.cohort GROUP BY ethnicity",
+  "decision_rule": "Exclude Other/Unknown and blank ethnicity unconditionally (missingness, not an ethnicity category -- eicu_crd.patient.ethnicity has no separate NULL/UNKNOWN code, both show up as either the literal 'Other/Unknown' string or an empty string). Take the two largest remaining buckets subject to a minimum-size gate (n>=1000 and >=2% of cohort) as the binary contrast, mirroring config/race_bucket_map.json's MIMIC decision rule exactly. Unlike MIMIC's race field, eICU's ethnicity field is already coarse (7 categories total, no sub-bucket rollup needed) -- this file's race_map is an identity map plus the two exclusions, kept in the same shape as race_bucket_map.json for pipeline parity (eicu_channels.py's demographic_targets() reads it the same way mimic_channels.py reads race_bucket_map.json).",
+  "min_size_gate": {
+    "n": 1000,
+    "pct": 2.0
+  },
+  "race_map": {
+    "Caucasian": "Caucasian",
+    "African American": "African American",
+    "Hispanic": "Hispanic",
+    "Asian": "Asian",
+    "Native American": "Native American",
+    "Other/Unknown": "EXCLUDE_MISSINGNESS",
+    "": "EXCLUDE_MISSINGNESS"
+  },
+  "contrast": [
+    "Caucasian",
+    "African American"
+  ],
+  "bucket_sizes": {
+    "Caucasian": 106526,
+    "African American": 14537,
+    "EXCLUDE_MISSINGNESS": 8244,
+    "Hispanic": 5194,
+    "Asian": 2317,
+    "Native American": 955
+  },
+  "bucket_mortality_rate": {
+    "Caucasian": 0.0939,
+    "African American": 0.0874,
+    "EXCLUDE_MISSINGNESS": 0.0933,
+    "Hispanic": 0.0970,
+    "Asian": 0.0988,
+    "Native American": 0.0890
+  },
+  "n_in_contrast": 121063,
+  "n_excluded": 16710,
+  "cohort_n": 137773
+}

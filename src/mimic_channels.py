@@ -1,5 +1,5 @@
 """T3 -- paired value/time channels: first & last draw per analyte, selected
-by time alone, never by value (sql/04_paired_channels.sql). V and S are
+by time alone, never by value (sql/mimic_03_paired_channels.sql). V and S are
 separable by construction, so the audit is a one-line suffix check instead of
 a maintained column list, and nothing needs to be redacted.
 
@@ -22,7 +22,7 @@ Default itemid scope is the core analyte set: complete-case over the full
 ~84-analyte discretionary set will shred the sample size, so CORE is the
 primary arm and DISC is a stress test, not swapped by default.
 
-    PYTHONPATH=src .venv/bin/python src/t3_paired_channels.py
+    PYTHONPATH=src .venv/bin/python src/mimic_channels.py
 """
 from __future__ import annotations
 
@@ -76,6 +76,51 @@ def _pull(refresh=False):
                                      "gender, icu_los_days, hospital_expire_flag "
                                      "FROM `{ds}.cohort`", refresh)
     return long, cohort
+
+
+def _pull_demo(refresh=False):
+    """subject_id, race -- decoupled cache (own cache key), does not touch
+    out/cohort.parquet or the "cohort" cache key that the mortality pipeline
+    depends on. `race` already lives in the BigQuery `cohort` table
+    (sql/mimic_01_cohort.sql), just not in _pull()'s narrower local cache."""
+    return bqutil.cache("cohort_demo", "SELECT subject_id, race FROM `{ds}.cohort`", refresh)
+
+
+def demographic_targets(refresh: bool = False) -> tuple[pd.DataFrame, dict]:
+    """subject_id-indexed frame with gender_female, age_ge65, race_binary
+    (NaN = excluded/unknown), for use as negative-control / specificity-probe
+    targets via retarget(). Unlike hospital_expire_flag, these are not
+    causally downstream of the physiology V/S are measuring -- age and
+    gender still have genuine biological links to lab values (V signal is
+    expected), but there is no principled reason for draw *structure* to
+    encode them, and race has no principled physiological mechanism at all.
+    See config/race_bucket_map.json for how the binary race contrast was
+    chosen (WHITE vs BLACK/AFRICAN AMERICAN, the two largest MIMIC-IV race
+    buckets after excluding Unknown/Declined/Other)."""
+    _, cohort = _pull(refresh)              # gender, anchor_age already here
+    demo = _pull_demo(refresh)
+    df = cohort[["subject_id", "gender", "anchor_age"]].merge(demo, on="subject_id", how="left")
+    assert df["race"].notna().all(), (
+        "cohort_demo is missing subject_ids present in cohort -- the two local "
+        "caches have drifted apart (cohort table rebuilt since one was cached). "
+        "Rerun _pull(refresh=True) and _pull_demo(refresh=True) together.")
+
+    df["gender_female"] = (df["gender"] == "F").astype(float)
+    df["age_ge65"] = (df["anchor_age"] >= 65).astype(float)
+
+    race_cfg = json.loads((ROOT / "config" / "race_bucket_map.json").read_text())
+    bucket = df["race"].map(race_cfg["race_map"])
+    a, b = race_cfg["contrast"]
+    df["race_binary"] = np.select([bucket == a, bucket == b], [0.0, 1.0], default=np.nan)
+
+    info = {
+        "race_contrast": race_cfg["contrast"],
+        "race_bucket_sizes": race_cfg["bucket_sizes"],
+        "race_excluded_counts": df.loc[df["race_binary"].isna(), "race"]
+                                    .value_counts().to_dict(),
+    }
+    out = df.set_index("subject_id")[["gender_female", "age_ge65", "race_binary"]]
+    return out, info
 
 
 def build_wide(itemid_scope: set[int], refresh: bool = False):
@@ -177,6 +222,28 @@ def impute(itemid_scope: set[int] | None = None,
             "v_missing_rate": float(np.mean(~np.isfinite(Xv_raw))),
             "prevalence": float(y.mean())}
     return Channels(Xv, Xs, y, w.subject_id.to_numpy(), v_cols, s_cols, meta)
+
+
+def retarget(ch: Channels, y_new: pd.Series, target_name: str) -> Channels:
+    """Swap an already-built arm's target without rebuilding Xv/Xs. Row
+    selection in complete_case()/impute() never depends on the target
+    (complete_case's keep-mask is computed from the V/S wide table before the
+    target is merged in; impute() never filters rows at all) -- so Xv/Xs are
+    valid for any target, and only the target-null rows need dropping here.
+
+    y_new: subject_id -> {0.0, 1.0, NaN}; NaN means excluded (e.g. a
+    demographic category outside the chosen binary contrast).
+    """
+    assert len(np.unique(ch.groups)) == len(ch.groups), "ch.groups must be unique subject_ids"
+    y_aligned = y_new.reindex(ch.groups)
+    keep = y_aligned.notna().to_numpy()
+    meta = {**ch.meta, "target": target_name,
+            "base_arm": ch.meta.get("arm"), "base_arm_n": ch.meta.get("n"),
+            "n": int(keep.sum()), "n_dropped_for_target": int((~keep).sum()),
+            "drop_rate_for_target": float((~keep).mean()),
+            "prevalence": float(y_aligned[keep].mean())}
+    return Channels(ch.Xv[keep], ch.Xs[keep], y_aligned[keep].to_numpy(dtype=int),
+                     ch.groups[keep], ch.v_names, ch.s_names, meta)
 
 
 if __name__ == "__main__":

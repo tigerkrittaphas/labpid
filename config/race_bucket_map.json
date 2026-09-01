@@ -1,0 +1,70 @@
+{
+  "source_query": "sql recon 2026-08-18: SELECT race, COUNT(*) n, COUNTIF(hospital_expire_flag=1) deaths, AVG(hospital_expire_flag) mortality_rate FROM cohort GROUP BY race",
+  "decision_rule": "Exclude UNKNOWN/OTHER/UNABLE TO OBTAIN/PATIENT DECLINED TO ANSWER unconditionally (missingness, not a race category). Roll remaining raw MIMIC-IV race strings up to top-level buckets by prefix. Take the two largest buckets subject to a minimum-size gate (n>=1000 and >=2% of cohort) as the binary contrast; all other buckets (incl. OTHER_SMALL: Portuguese/South American/Multiple race -- ambiguous, not merged into WHITE/BLACK without justification) are excluded from race_binary (left NaN), not folded into either side.",
+  "min_size_gate": {
+    "n": 1000,
+    "pct": 2.0
+  },
+  "race_map": {
+    "WHITE": "WHITE",
+    "WHITE - OTHER EUROPEAN": "WHITE",
+    "WHITE - RUSSIAN": "WHITE",
+    "WHITE - EASTERN EUROPEAN": "WHITE",
+    "WHITE - BRAZILIAN": "WHITE",
+    "BLACK/AFRICAN AMERICAN": "BLACK/AFRICAN AMERICAN",
+    "BLACK/CAPE VERDEAN": "BLACK/AFRICAN AMERICAN",
+    "BLACK/CARIBBEAN ISLAND": "BLACK/AFRICAN AMERICAN",
+    "BLACK/AFRICAN": "BLACK/AFRICAN AMERICAN",
+    "HISPANIC/LATINO - PUERTO RICAN": "HISPANIC/LATINO",
+    "HISPANIC OR LATINO": "HISPANIC/LATINO",
+    "HISPANIC/LATINO - DOMINICAN": "HISPANIC/LATINO",
+    "HISPANIC/LATINO - GUATEMALAN": "HISPANIC/LATINO",
+    "HISPANIC/LATINO - SALVADORAN": "HISPANIC/LATINO",
+    "HISPANIC/LATINO - MEXICAN": "HISPANIC/LATINO",
+    "HISPANIC/LATINO - COLUMBIAN": "HISPANIC/LATINO",
+    "HISPANIC/LATINO - CUBAN": "HISPANIC/LATINO",
+    "HISPANIC/LATINO - HONDURAN": "HISPANIC/LATINO",
+    "HISPANIC/LATINO - CENTRAL AMERICAN": "HISPANIC/LATINO",
+    "ASIAN": "ASIAN",
+    "ASIAN - CHINESE": "ASIAN",
+    "ASIAN - SOUTH EAST ASIAN": "ASIAN",
+    "ASIAN - ASIAN INDIAN": "ASIAN",
+    "ASIAN - KOREAN": "ASIAN",
+    "AMERICAN INDIAN/ALASKA NATIVE": "AMERICAN INDIAN/ALASKA NATIVE",
+    "NATIVE HAWAIIAN OR OTHER PACIFIC ISLANDER": "NATIVE HAWAIIAN/PACIFIC ISLANDER",
+    "PORTUGUESE": "OTHER_SMALL",
+    "SOUTH AMERICAN": "OTHER_SMALL",
+    "MULTIPLE RACE/ETHNICITY": "OTHER_SMALL",
+    "UNKNOWN": "EXCLUDE_MISSINGNESS",
+    "OTHER": "EXCLUDE_MISSINGNESS",
+    "UNABLE TO OBTAIN": "EXCLUDE_MISSINGNESS",
+    "PATIENT DECLINED TO ANSWER": "EXCLUDE_MISSINGNESS"
+  },
+  "contrast": [
+    "WHITE",
+    "BLACK/AFRICAN AMERICAN"
+  ],
+  "bucket_sizes": {
+    "WHITE": 42871,
+    "EXCLUDE_MISSINGNESS": 11646,
+    "BLACK/AFRICAN AMERICAN": 6016,
+    "HISPANIC/LATINO": 2284,
+    "ASIAN": 1981,
+    "OTHER_SMALL": 341,
+    "AMERICAN INDIAN/ALASKA NATIVE": 127,
+    "NATIVE HAWAIIAN/PACIFIC ISLANDER": 100
+  },
+  "bucket_mortality_rate": {
+    "WHITE": 0.0953,
+    "EXCLUDE_MISSINGNESS": 0.1734,
+    "BLACK/AFRICAN AMERICAN": 0.0908,
+    "HISPANIC/LATINO": 0.0749,
+    "ASIAN": 0.107,
+    "OTHER_SMALL": 0.0762,
+    "AMERICAN INDIAN/ALASKA NATIVE": 0.0787,
+    "NATIVE HAWAIIAN/PACIFIC ISLANDER": 0.16
+  },
+  "n_in_contrast": 48887,
+  "n_excluded": 16479,
+  "cohort_n": 65366
+}

@@ -13,15 +13,12 @@ with BROJA on Gaussian-like structure) can't. It is NOT guaranteed
 non-negative; a negative atom under CCS is a property of the measure, not a
 solver failure, and is reported as-is rather than retried.
 
-PID_Proj (Harder et al., bivariate-native) was tried and dropped: it hits a
-genuine bug in this dit version (1.5) -- `dit.pid.measures.iproj.
-projected_information` fails with `InvalidOutcome: (0, 0) is not in the
-sample space` inside its internal xarray-backed `coalesce`/`condition_on`
-calls, reproducible on a plain 2x2x2 distribution built either from numpy
-int64 or plain Python int outcome labels, so it isn't an artifact of how this
-module builds its distributions.
 """
 from __future__ import annotations
+
+import contextlib
+import signal
+import threading
 
 import numpy as np
 import dit
@@ -117,8 +114,53 @@ def ccs_atoms(tab):
 
 SOLVER_CASCADE = ("cone", "admui", "scipy")
 
+# A solver that does not converge does not always fail -- on a degenerate table it
+# can spin forever. Measured on MIMIC matched-12, k=16, seed 3 (512 cells, 13 of
+# them empty, minimum non-zero count 1): `cone` was still running at 300 s, and
+# `admui` and `scipy` behave the same way, so the cascade never returns and the
+# caller hangs with no error. That is what wedged notebooks/03_matched_panel12 --
+# 2h38m on the first attempt, 90 min on the second, both inside the k-plateau
+# sweep, both at that one cell.
+#
+# A wall-clock cap turns a hang into an ordinary non-convergence, which the
+# caller already knows how to report.
+# 10 s, not something larger: every healthy solve measured on this project's
+# tables finishes in 0.1-1.6 s, so this is ~6x headroom and truncates nothing
+# real. The cap has to stay small because it is also paid inside permutation
+# nulls -- `permutation_null_budgeted` probes 16 draws to estimate per-draw cost,
+# and at a 120 s cap a single pathological draw cost 360 s, blew the whole 90 s
+# budget, and left 16 usable draws and a meaningless p of 1/17.
+SOLVER_TIMEOUT_S = 10.0
 
-def broja_atoms_checked(tab, methods=SOLVER_CASCADE):
+
+class SolverTimeout(Exception):
+    """A single BROJA solve exceeded its wall-clock budget."""
+
+
+@contextlib.contextmanager
+def _time_limit(seconds):
+    """SIGALRM guard around one solve.
+
+    Only arms on a process's main thread. The pool workers forked by `_pool()`
+    are main-thread, so nulls are covered too; anything running on a non-main
+    thread silently gets no limit rather than a ValueError."""
+    if not seconds or threading.current_thread() is not threading.main_thread():
+        yield
+        return
+
+    def _fire(signum, frame):
+        raise SolverTimeout()
+
+    prev = signal.signal(signal.SIGALRM, _fire)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, prev)
+
+
+def broja_atoms_checked(tab, methods=SOLVER_CASCADE, timeout_s=SOLVER_TIMEOUT_S):
     """`broja_atoms` plus the non-negativity check that detects a solver that
     terminated at an infeasible point.
 
@@ -129,7 +171,8 @@ def broja_atoms_checked(tab, methods=SOLVER_CASCADE):
     best, best_method = None, None
     for m in methods:
         try:
-            a = broja_atoms(tab, m)
+            with _time_limit(timeout_s):
+                a = broja_atoms(tab, m)
         except Exception:
             continue
         if best is None or min(a.values()) > min(best.values()):
@@ -137,7 +180,14 @@ def broja_atoms_checked(tab, methods=SOLVER_CASCADE):
         if min(a.values()) >= -NEG_TOL:
             break
     if best is None:
-        raise RuntimeError("every BROJA solver failed on this table")
+        # Every solver failed or timed out. Report it as a non-converged cell
+        # rather than raising: a sweep over k should record that this grid is
+        # unusable and carry on, not die and lose the k values that worked.
+        # NaN atoms propagate into atoms_pct_of_joint, so nothing downstream can
+        # mistake this for a real decomposition.
+        nan = float("nan")
+        return {"red": nan, "u_val": nan, "u_str": nan, "syn": nan,
+                "_converged": False, "_solver": None}
     best = dict(best)
     best["_converged"] = bool(min(v for k, v in best.items()
                                   if not k.startswith("_")) >= -NEG_TOL)

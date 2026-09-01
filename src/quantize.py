@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
+from threadpoolctl import threadpool_limits
 
 import pid_broja as pb
 
@@ -28,7 +29,7 @@ def standardize_for_kmeans(X, sentinel=None):
     cluster boundary regardless of its actual signal content. Z-scoring
     each column fixes that for an ordinary continuous block.
 
-    A single scalar `sentinel` (e.g. t3_paired_channels.TIME_SENTINEL) is a
+    A single scalar `sentinel` (e.g. mimic_channels.TIME_SENTINEL) is a
     harder case than an ordinary outlier: it's a real missingness code, not
     noise, but feeding it straight into a Euclidean-distance clustering
     inflates that column's std by 3-10x (see WORKNOTES.md 2026-08-19) and
@@ -65,7 +66,20 @@ def kmeans_levels(X, k, seed=0):
     run and nothing downstream (occupancy shares, plots) would line up."""
     km = MiniBatchKMeans(n_clusters=k, random_state=seed, n_init=10,
                          batch_size=4096, max_iter=300)
-    lab = km.fit_predict(X)
+    # Pin to one thread. MiniBatchKMeans does not merely fail to scale here, it
+    # collapses: on this 64,623 x 48 structure block at k=13, measured
+    #
+    #     1 thread   0.75 s        4 threads  91.3 s        32 threads  >10 min
+    #
+    # a ~120x SLOWDOWN, because the batch is only 4,096 rows and the per-batch
+    # OpenMP fork/join overhead swamps the work -- n_init=10 x max_iter=300 means
+    # up to 3,000 of those parallel regions per call. Uncapped, this is what hung
+    # notebooks/03_matched_panel12 for 2h38m and 58 CPU-hours in what should be a
+    # ~2 min cell, and what put bootstrap_ci (1,000 refits) 2x over its runtime.
+    # Verified label-for-label identical to the unpinned result, so this is a
+    # pure speed fix -- it changes no number this project reports.
+    with threadpool_limits(limits=1):
+        lab = km.fit_predict(X)
     order = np.argsort(-np.bincount(lab, minlength=k))
     remap = np.empty(k, dtype=int)
     remap[order] = np.arange(k)
